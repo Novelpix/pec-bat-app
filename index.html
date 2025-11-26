@@ -845,6 +845,8 @@
         </div>
 
         <div style="text-align: center; margin: 30px 0">
+          <button class="btn btn-primary" id="btnSyncDashboard" onclick="syncAllData()"
+            style="margin: 5px; background-color: #28a745;">🔄 Synchroniser</button>
           <button class="btn btn-secondary" id="btnExports" style="margin: 5px;">📊 Import-Export</button>
           <button class="btn btn-secondary" id="btnJournalVisite" style="margin: 5px;">📝 Journal de Visite</button>
           <button class="btn btn-secondary" id="btnSyntheseKpis" style="margin: 5px;">📊 Synthèse & KPIs</button>
@@ -2177,15 +2179,6 @@
         </div>
 
         <div style="text-align: center; margin: 40px 0">
-          <h3 style="color: #333; margin: 40px 0 20px 0">📊 Synchronisation Google Sheets :</h3>
-          <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin: 20px 0">
-            <button class="btn btn-primary" onclick="configureGoogleSheets()">⚙️ Configurer Google Sheets</button>
-            <button id="btnToggleGoogleSheets" class="btn btn-secondary" onclick="toggleGoogleSheets()">⏸️ Google Sheets
-              Désactivé</button>
-          </div>
-          <p style="color: #6c757d; font-size: 14px; margin-top: 10px">
-            Activez la synchronisation pour envoyer automatiquement les données vers Google Sheets
-          </p>
           <button class="btn btn-secondary" onclick="clearAllData()" style="margin-top: 30px">🗑️ Effacer toutes les
             données</button>
         </div>
@@ -2436,8 +2429,7 @@
       completedLots: [],
       currentPhotos: [],
       currentCroquis: null,
-      googleSheetsUrl: '',
-      googleSheetsEnabled: false,
+
       formatRestitution: 'csv',
       cloudUrl: '',
       gmaoLogiciel: '',
@@ -4026,17 +4018,7 @@
           console.log('✅ Lots terminés chargés:', AppState.completedLots.length);
         }
 
-        const savedGoogleSheetsUrl = localStorage.getItem('pecTechGoogleSheetsUrl');
-        if (savedGoogleSheetsUrl) {
-          AppState.googleSheetsUrl = savedGoogleSheetsUrl;
-          console.log('✅ URL Google Sheets chargée');
-        }
 
-        const savedGoogleSheetsEnabled = localStorage.getItem('pecTechGoogleSheetsEnabled');
-        if (savedGoogleSheetsEnabled) {
-          AppState.googleSheetsEnabled = savedGoogleSheetsEnabled === 'true';
-          console.log('✅ État Google Sheets:', AppState.googleSheetsEnabled ? 'Activé' : 'Désactivé');
-        }
 
         const savedFormatRestitution = localStorage.getItem('pecTechFormatRestitution');
         if (savedFormatRestitution) {
@@ -4054,7 +4036,7 @@
           AppState.gmaoLogiciel = savedGmaoLogiciel;
         }
 
-        updateGoogleSheetsButton();
+
         loadFormatRestitutionPreferences();
       } catch (e) {
         console.error('❌ Erreur chargement données:', e);
@@ -4440,9 +4422,15 @@
       }
 
       const btn = document.getElementById('btnSync');
+      const btnDash = document.getElementById('btnSyncDashboard');
+
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '⏳ Sync...';
+      }
+      if (btnDash) {
+        btnDash.disabled = true;
+        btnDash.innerHTML = '⏳ Sync...';
       }
       showToast('🔄 Synchronisation en cours...', 'info');
 
@@ -4459,9 +4447,14 @@
 
       if (total === 0) {
         showToast('⚠️ Aucune donnée à synchroniser', 'warning');
+        showToast('⚠️ Aucune donnée à synchroniser', 'warning');
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = '🔄 Synchroniser';
+        }
+        if (btnDash) {
+          btnDash.disabled = false;
+          btnDash.innerHTML = '🔄 Synchroniser';
         }
         return;
       }
@@ -4485,6 +4478,10 @@
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '🔄 Synchroniser';
+      }
+      if (btnDash) {
+        btnDash.disabled = false;
+        btnDash.innerHTML = '🔄 Synchroniser';
       }
     }
 
