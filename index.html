@@ -4409,15 +4409,35 @@
 
         // 1. Sauvegarder l'équipement
         if (supabaseId) {
-          // MISE À JOUR d'un équipement existant
-          console.log("🔄 Mise à jour de l'équipement existant");
-          const result = await supabaseClient
+          // Vérifier que l'ID existe vraiment dans Supabase
+          console.log("🔍 Vérification de l'existence de l'ID Supabase...");
+          const { data: existingCheck } = await supabaseClient
             .from("equipements")
-            .update(equipmentForDb)
+            .select('id')
             .eq('id', supabaseId)
-            .select();
-          eq = result.data;
-          eqErr = result.error;
+            .limit(1);
+
+          if (existingCheck && existingCheck.length > 0) {
+            // MISE À JOUR d'un équipement existant
+            console.log("🔄 Mise à jour de l'équipement existant");
+            const result = await supabaseClient
+              .from("equipements")
+              .update(equipmentForDb)
+              .eq('id', supabaseId)
+              .select();
+            eq = result.data;
+            eqErr = result.error;
+          } else {
+            // L'ID n'existe pas dans Supabase → INSERT au lieu de UPDATE
+            console.warn("⚠️ ID Supabase inexistant, création d'un nouvel enregistrement");
+            equipment.supabase_id = null; // Réinitialiser pour avoir un nouvel UUID
+            const result = await supabaseClient
+              .from("equipements")
+              .insert(equipmentForDb)
+              .select();
+            eq = result.data;
+            eqErr = result.error;
+          }
         } else {
           // Vérifier si un équipement similaire existe déjà (basé sur lot, code et timestamp similaire)
           // pour éviter les doublons en cas de double-clic sur le bouton sync
