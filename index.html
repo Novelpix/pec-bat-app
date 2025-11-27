@@ -4321,7 +4321,19 @@
 
     async function uploadPhotoToSupabase(base64Data, fileName, equipmentId) {
       try {
+        console.log(`📤 Upload photo "${fileName}" pour équipement ${equipmentId}`);
+
+        if (!base64Data || typeof base64Data !== 'string') {
+          console.error("❌ Données base64 invalides:", typeof base64Data);
+          return null;
+        }
+
         const parts = base64Data.split(';base64,');
+        if (parts.length < 2) {
+          console.error("❌ Format base64 invalide");
+          return null;
+        }
+
         const contentType = parts[0].replace('data:', '');
         const byteCharacters = atob(parts[1]);
         const byteArrays = [];
@@ -4335,6 +4347,8 @@
         }
         const file = new Blob(byteArrays, { type: contentType });
 
+        console.log(`📦 Fichier préparé: ${file.size} bytes, type: ${contentType}`);
+
         const { error } = await supabaseClient
           .storage
           .from("pec-photos")
@@ -4344,46 +4358,65 @@
           });
 
         if (error) {
-          console.error("Supabase upload error:", error);
+          console.error("❌ Supabase upload error:", error);
+          console.error("❌ Détails:", JSON.stringify(error, null, 2));
           return null;
         }
 
-        return `${SUPABASE_URL}/storage/v1/object/public/pec-photos/${equipmentId}/${fileName}`;
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/pec-photos/${equipmentId}/${fileName}`;
+        console.log(`✅ Photo uploadée: ${publicUrl}`);
+        return publicUrl;
       } catch (err) {
-        console.error("Upload failure:", err);
+        console.error("❌ Upload failure:", err);
+        console.error("❌ Stack:", err.stack);
         return null;
       }
     }
 
     async function saveEquipmentToSupabase(equipment) {
       try {
+        console.log("🔄 Début de synchronisation équipement:", equipment.id);
+
         // Préparer l'objet pour Supabase (exclure les photos base64)
         const equipmentForDb = { ...equipment };
         delete equipmentForDb.photos; // On ne stocke pas les photos base64 en base
         delete equipmentForDb.croquis; // Idem si trop lourd, sinon convertir
 
+        console.log("📤 Envoi vers Supabase...");
+
         // 1. Sauvegarder l'équipement
         const { data: eq, error: eqErr } = await supabaseClient
           .from("equipements")
           .upsert(equipmentForDb, { onConflict: 'id' }) // Utilise l'ID existant
-          .select()
-          .single();
+          .select();
 
         if (eqErr) {
-          console.error("Supabase insert error:", eqErr);
+          console.error("❌ Supabase insert error:", eqErr);
+          console.error("❌ Détails de l'erreur:", JSON.stringify(eqErr, null, 2));
           return false;
         }
 
-        const eqId = eq.id;
+        if (!eq || eq.length === 0) {
+          console.error("❌ Aucune donnée retournée par Supabase");
+          return false;
+        }
+
+        const eqId = eq[0].id;
+        console.log("✅ Équipement sauvegardé, ID:", eqId);
 
         // 2. Sauvegarder les photos
         if (equipment.photos && equipment.photos.length > 0) {
+          console.log(`📸 Upload de ${equipment.photos.length} photo(s)...`);
           for (let i = 0; i < equipment.photos.length; i++) {
             const photo = equipment.photos[i];
             // Si c'est déjà une URL (déjà sync), on ignore
-            if (photo.data && photo.data.startsWith('http')) continue;
+            if (photo.data && photo.data.startsWith('http')) {
+              console.log(`⏭️ Photo ${i+1} déjà synchronisée`);
+              continue;
+            }
 
             if (photo.data) {
+              console.log(`📤 Upload photo ${i+1}/${equipment.photos.length}...`);
               const url = await uploadPhotoToSupabase(
                 photo.data,
                 photo.name || `photo_${Date.now()}_${i}.jpg`,
@@ -4392,31 +4425,42 @@
 
               if (url) {
                 // Enregistrer l'URL dans la table photos
-                await supabaseClient.from("photos").insert({
+                const { error: photoErr } = await supabaseClient.from("photos").insert({
                   equipement_id: eqId,
                   url: url
                 });
 
-                // Mettre à jour l'objet local pour ne plus re-uploader
-                // (Optionnel : complexifie la gestion locale, on peut juste laisser comme ça)
+                if (photoErr) {
+                  console.error(`❌ Erreur insertion photo ${i+1}:`, photoErr);
+                } else {
+                  console.log(`✅ Photo ${i+1} sauvegardée`);
+                }
+              } else {
+                console.error(`❌ Échec upload photo ${i+1}`);
               }
             }
           }
         }
+        console.log("✅ Synchronisation équipement terminée:", equipment.id);
         return true;
       } catch (err) {
-        console.error("Save error:", err);
+        console.error("❌ Save error:", err);
+        console.error("❌ Stack:", err.stack);
         return false;
       }
     }
 
     async function syncAllData() {
+      console.log("🔄 Début de la synchronisation globale");
+
       if (!navigator.onLine) {
+        console.error("❌ Pas de connexion internet");
         showToast('❌ Pas de connexion internet', 'error');
         return;
       }
 
       if (!supabaseClient) {
+        console.error("❌ Supabase non configuré");
         showToast('❌ Supabase non configuré', 'error');
         return;
       }
@@ -4445,8 +4489,10 @@
         }
       });
 
+      console.log(`📊 Total d'équipements à synchroniser: ${total}`);
+
       if (total === 0) {
-        showToast('⚠️ Aucune donnée à synchroniser', 'warning');
+        console.warn("⚠️ Aucune donnée à synchroniser");
         showToast('⚠️ Aucune donnée à synchroniser', 'warning');
         if (btn) {
           btn.disabled = false;
@@ -4462,12 +4508,22 @@
       // Itérer et envoyer
       for (const lot of LOTS_TECHNIQUES) {
         const equipments = AppState.equipmentData[lot] || [];
+        if (equipments.length > 0) {
+          console.log(`📦 Synchronisation du lot "${lot}" (${equipments.length} équipements)`);
+        }
         for (const eq of equipments) {
           const success = await saveEquipmentToSupabase(eq);
-          if (success) successCount++;
-          else failCount++;
+          if (success) {
+            successCount++;
+            console.log(`✅ ${successCount}/${total} synchronisés`);
+          } else {
+            failCount++;
+            console.error(`❌ Échec ${failCount}`);
+          }
         }
       }
+
+      console.log(`📊 Résultat final: ${successCount} succès, ${failCount} échecs sur ${total} total`);
 
       if (failCount === 0) {
         showToast(`✅ Synchronisation terminée (${successCount}/${total})`, 'success');
