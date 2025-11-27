@@ -4331,98 +4331,9 @@
 
     // ═══════════════════════════════════════════════════════════════════════
     // SYNCHRONISATION SUPABASE
+    // Note: Les fonctions uploadPhotoToSupabase() et sendToSupabase() sont
+    // définies plus haut dans le code (lignes 3609 et 3492)
     // ═══════════════════════════════════════════════════════════════════════
-
-    async function uploadPhotoToSupabase(base64Data, fileName, equipmentId) {
-      try {
-        const parts = base64Data.split(';base64,');
-        const contentType = parts[0].replace('data:', '');
-        const byteCharacters = atob(parts[1]);
-        const byteArrays = [];
-        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-          const slice = byteCharacters.slice(offset, offset + 512);
-          const byteNumbers = new Array(slice.length);
-          for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
-          }
-          byteArrays.push(new Uint8Array(byteNumbers));
-        }
-        const file = new Blob(byteArrays, { type: contentType });
-
-        const { error } = await supabaseClient
-          .storage
-          .from("pec-photos")
-          .upload(`${equipmentId}/${fileName}`, file, {
-            cacheControl: "3600",
-            upsert: true
-          });
-
-        if (error) {
-          console.error("Supabase upload error:", error);
-          return null;
-        }
-
-        return `${SUPABASE_URL}/storage/v1/object/public/pec-photos/${equipmentId}/${fileName}`;
-      } catch (err) {
-        console.error("Upload failure:", err);
-        return null;
-      }
-    }
-
-    async function saveEquipmentToSupabase(equipment) {
-      try {
-        // Préparer l'objet pour Supabase (exclure les photos base64)
-        const equipmentForDb = { ...equipment };
-        delete equipmentForDb.photos; // On ne stocke pas les photos base64 en base
-        delete equipmentForDb.croquis; // Idem si trop lourd, sinon convertir
-
-        // 1. Sauvegarder l'équipement
-        const { data: eq, error: eqErr } = await supabaseClient
-          .from("equipements")
-          .upsert(equipmentForDb, { onConflict: 'id' }) // Utilise l'ID existant
-          .select()
-          .single();
-
-        if (eqErr) {
-          console.error("Supabase insert error:", eqErr);
-          return false;
-        }
-
-        const eqId = eq.id;
-
-        // 2. Sauvegarder les photos
-        if (equipment.photos && equipment.photos.length > 0) {
-          for (let i = 0; i < equipment.photos.length; i++) {
-            const photo = equipment.photos[i];
-            // Si c'est déjà une URL (déjà sync), on ignore
-            if (photo.data && photo.data.startsWith('http')) continue;
-
-            if (photo.data) {
-              const url = await uploadPhotoToSupabase(
-                photo.data,
-                photo.name || `photo_${Date.now()}_${i}.jpg`,
-                eqId
-              );
-
-              if (url) {
-                // Enregistrer l'URL dans la table photos
-                await supabaseClient.from("photos").insert({
-                  equipement_id: eqId,
-                  url: url
-                });
-
-                // Mettre à jour l'objet local pour ne plus re-uploader
-                // (Optionnel : complexifie la gestion locale, on peut juste laisser comme ça)
-              }
-            }
-          }
-        }
-        return true;
-      } catch (err) {
-        console.error("Save error:", err);
-        return false;
-      }
-    }
 
     async function syncAllData() {
       if (!navigator.onLine) {
@@ -4477,9 +4388,14 @@
       for (const lot of LOTS_TECHNIQUES) {
         const equipments = AppState.equipmentData[lot] || [];
         for (const eq of equipments) {
-          const success = await saveEquipmentToSupabase(eq);
-          if (success) successCount++;
-          else failCount++;
+          try {
+            await sendToSupabase(eq);
+            successCount++;
+            console.log(`✅ Équipement synchronisé: ${eq.code || eq.id}`);
+          } catch (error) {
+            failCount++;
+            console.error(`❌ Échec synchronisation équipement ${eq.code || eq.id}:`, error);
+          }
         }
       }
 
