@@ -4637,6 +4637,9 @@
 
         const equipmentForDb = { ...equipment.data };
 
+        // Exclure les champs stockés localement uniquement (ne vont pas dans Supabase)
+        delete equipmentForDb.croquis;  // Stocké localement comme les photos
+
         console.log("📤 Envoi vers Supabase...", equipment.supabase_id ?
           `(UPDATE UUID: ${equipment.supabase_id})` :
           "(INSERT nouveau)");
