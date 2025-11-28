@@ -3582,7 +3582,7 @@
 
     // ═══════════════════════════════════════════════════════════════════════
     // ANCIENNE FONCTION sendToSupabase SUPPRIMÉE
-    // Utiliser saveEquipmentToSupabase() à la place (ligne ~4376)
+    // Utiliser syncEquipmentToSupabase() à la place (ligne ~4600)
     // ═══════════════════════════════════════════════════════════════════════
 
     async function uploadPhotoToSupabase(base64Data, fileName, equipmentId) {
@@ -4905,7 +4905,7 @@
           console.log(`📦 Synchronisation du lot "${lot}" (${equipments.length} équipements)`);
         }
         for (const eq of equipments) {
-          const success = await saveEquipmentToSupabase(eq);
+          const success = await syncEquipmentToSupabase(eq);
           if (success) {
             successCount++;
             console.log(`✅ ${successCount}/${total} synchronisés`);
