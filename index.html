@@ -4386,7 +4386,7 @@
 
         if (supabaseId) {
           // CAS 1 : On a un supabase_id → UPDATE
-          console.log("🔄 Tentative de mise à jour");
+          console.log(`🔄 UPDATE de l'équipement (UUID: ${supabaseId})`);
           const result = await supabaseClient
             .from("equipements")
             .update(equipmentForDb)
@@ -4398,8 +4398,8 @@
 
           // Si l'UPDATE échoue ou ne retourne rien, l'ID est fantôme
           if (!eqErr && (!eq || eq.length === 0)) {
-            console.warn("⚠️ UPDATE a échoué, l'ID n'existe pas dans Supabase");
-            console.log("➕ Basculement en mode INSERT");
+            console.warn(`⚠️ UPDATE a échoué pour UUID ${supabaseId} (ID fantôme ou supprimé)`);
+            console.log("➕ Basculement automatique en mode INSERT");
 
             // Réessayer avec INSERT
             const insertResult = await supabaseClient
@@ -4409,10 +4409,12 @@
 
             eq = insertResult.data;
             eqErr = insertResult.error;
+          } else if (!eqErr) {
+            console.log(`✅ UPDATE réussi pour UUID ${supabaseId}`);
           }
         } else {
           // CAS 2 : Pas de supabase_id → INSERT
-          console.log("➕ Insertion d'un nouvel équipement");
+          console.log("➕ INSERT d'un nouvel équipement (pas de supabase_id)");
           const result = await supabaseClient
             .from("equipements")
             .insert(equipmentForDb)
@@ -4441,10 +4443,22 @@
         console.log("✅ Équipement sauvegardé, UUID Supabase:", eqId);
 
         // ═════════════════════════════════════════════════════════════
-        // MISE À JOUR DE L'OBJET LOCAL
+        // MISE À JOUR DE L'OBJET LOCAL ET APPSTATE
         // ═════════════════════════════════════════════════════════════
 
+        // Mettre à jour l'équipement local
         equipment.supabase_id = eqId;
+
+        // Retrouver et mettre à jour l'équipement dans AppState
+        for (const lot of LOTS_TECHNIQUES) {
+          const equipments = AppState.equipmentData[lot] || [];
+          const index = equipments.findIndex(e => e.id === equipment.id);
+          if (index !== -1) {
+            AppState.equipmentData[lot][index].supabase_id = eqId;
+            console.log(`💾 supabase_id mis à jour dans AppState pour ${equipment.id}`);
+            break;
+          }
+        }
 
         // ═════════════════════════════════════════════════════════════
         // UPLOAD DES PHOTOS
