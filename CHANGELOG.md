@@ -6,6 +6,63 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 
 ---
 
+## [1.1.0] - 2025-11-28
+
+### 🏗️ **REFONTE MAJEURE - Architecture de synchronisation**
+
+Cette version représente une refonte complète du système de synchronisation pour garantir un workflow terrain robuste et sans doublons.
+
+#### ✨ Nouveau système d'identifiants
+
+- **`local_id`** : UUID généré localement pour chaque équipement
+- **`supabase_id`** : UUID Supabase (null avant première synchronisation)
+- Séparation claire entre identité locale et identité distante
+
+#### 🔄 Nouvelle structure d'équipement
+
+```javascript
+{
+  local_id: "uuid-local",
+  supabase_id: "uuid-supabase" | null,
+  status: "pending" | "synced" | "error",
+  synced: boolean,
+  created_at: ISO datetime,
+  last_update: ISO datetime,
+  data: { /* tous les champs métier */ },
+  photos: [{ local_photo_id, supabase_photo_id, base64, synced, ... }]
+}
+```
+
+#### 🚀 Améliorations de la synchronisation
+
+- **INSERT/UPDATE intelligent** : Détection automatique basée sur `supabase_id`
+- **Gestion des photos refondée** : Métadonnées complètes (local_photo_id, supabase_photo_id, storage_path, synced)
+- **Statuts de synchronisation** : Suivi précis de l'état de chaque équipement
+- **Migration automatique** : Les anciennes données sont automatiquement migrées vers la nouvelle structure au chargement
+
+#### 🔧 Fonctions refondues
+
+- `saveEquipment()` : Utilise la nouvelle structure standardisée
+- `syncEquipmentToSupabase()` : Logique INSERT/UPDATE propre et documentée
+- `syncPhotosToSupabase()` : Upload + insertion table + gestion métadonnées
+- `deleteEquipment()` : Adapté pour `local_id`
+- `migrateEquipmentData()` : Conversion automatique ancienne → nouvelle structure
+
+#### 🛠️ Utilitaires ajoutés
+
+- `generateUUID()` : Génération d'UUID v4 pour identifiants locaux
+- `createEquipmentStructure()` : Création d'équipement avec structure standardisée
+- `getEquipmentByLocalId()` : Recherche par local_id
+- `normalizeEquipmentForDisplay()` : Normalisation pour affichage (rétrocompatibilité)
+
+#### ⚠️ Notes importantes
+
+- **Migration transparente** : Les équipements existants sont automatiquement migrés
+- **Rétrocompatibilité** : Fonction de normalisation pour l'affichage
+- **Tests recommandés** : Cycle complet création → sync → édition → sync → suppression
+
+---
+
 ## [1.0.2] - 2025-11-28
 
 ### ✨ Ajouté
