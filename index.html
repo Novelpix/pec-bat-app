@@ -2450,7 +2450,7 @@
     // INITIALISATION
     // ═══════════════════════════════════════════════════════════════════════
 
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', async function () {
       console.log('🚀 Initialisation PEC Tech App 100%...');
 
       loadFromLocalStorage();
@@ -2458,6 +2458,11 @@
       renderDashboard();
       updateOnlineStatus();
       startAutoSave();
+
+      // Nettoyage des IDs Supabase fantômes (équipements JSON importés)
+      if (navigator.onLine && supabaseClient) {
+        await cleanPhantomSupabaseIds();
+      }
 
       console.log('✅ Application initialisée');
     });
@@ -4222,6 +4227,72 @@
     // SYNCHRONISATION SUPABASE
     // ═══════════════════════════════════════════════════════════════════════
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // UTILITAIRES DE SYNCHRONISATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Nettoie les supabase_id fantômes (IDs qui n'existent pas dans Supabase)
+     * Utilisé au démarrage pour éviter les erreurs de synchro
+     */
+    async function cleanPhantomSupabaseIds() {
+      if (!supabaseClient) return;
+
+      console.log("🧹 Nettoyage des IDs Supabase fantômes...");
+      let cleanedCount = 0;
+
+      for (const lot of LOTS_TECHNIQUES) {
+        const equipments = AppState.equipmentData[lot] || [];
+        for (const eq of equipments) {
+          if (eq.supabase_id) {
+            // Vérifier si l'ID existe vraiment dans Supabase
+            const { data } = await supabaseClient
+              .from("equipements")
+              .select('id')
+              .eq('id', eq.supabase_id)
+              .limit(1);
+
+            if (!data || data.length === 0) {
+              // ID fantôme détecté, on le supprime
+              console.warn(`⚠️ ID fantôme détecté pour ${eq.code}: ${eq.supabase_id}`);
+              delete eq.supabase_id;
+              cleanedCount++;
+            }
+          }
+        }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`✅ ${cleanedCount} ID(s) fantôme(s) nettoyé(s)`);
+        saveToLocalStorage();
+      } else {
+        console.log("✅ Aucun ID fantôme trouvé");
+      }
+    }
+
+    /**
+     * Vérifie si un équipement existe dans Supabase par son UUID
+     */
+    async function equipmentExistsInSupabase(supabaseId) {
+      if (!supabaseId) return false;
+
+      const { data, error } = await supabaseClient
+        .from("equipements")
+        .select('id')
+        .eq('id', supabaseId)
+        .limit(1);
+
+      if (error) {
+        console.error("Erreur vérification existence:", error);
+        return false;
+      }
+
+      return data && data.length > 0;
+    }
+
+    /**
+     * Upload d'une photo vers Supabase Storage
+     */
     async function uploadPhotoToSupabase(base64Data, fileName, equipmentId) {
       try {
         console.log(`📤 Upload photo "${fileName}" pour équipement ${equipmentId}`);
@@ -4276,94 +4347,77 @@
       }
     }
 
+    /**
+     * FONCTION PRINCIPALE DE SYNCHRONISATION D'UN ÉQUIPEMENT
+     * Logique terrain fiable : INSERT si nouveau, UPDATE si existant
+     */
     async function saveEquipmentToSupabase(equipment) {
       try {
         console.log("🔄 Début de synchronisation équipement:", equipment.id);
 
-        // Préparer l'objet pour Supabase (exclure les photos base64)
+        // Préparer l'objet pour Supabase (exclure les photos base64 et croquis)
         const equipmentForDb = { ...equipment };
-        delete equipmentForDb.photos; // On ne stocke pas les photos base64 en base
-        delete equipmentForDb.croquis; // Idem si trop lourd, sinon convertir
+        delete equipmentForDb.photos;
+        delete equipmentForDb.croquis;
+        delete equipmentForDb.id; // ID local, pas pour Supabase
 
-        // L'ID local ne doit pas être envoyé à Supabase (qui utilise des UUID)
-        // On utilise supabase_id pour tracer l'ID Supabase si déjà créé
-        const supabaseId = equipmentForDb.supabase_id;
-        delete equipmentForDb.id; // Supprimer l'ID local
-        delete equipmentForDb.supabase_id; // Supprimer temporairement pour l'upsert
+        // Récupérer le supabase_id si existant
+        const supabaseId = equipment.supabase_id || null;
+        delete equipmentForDb.supabase_id; // Ne pas l'envoyer dans le payload
 
-        console.log("📤 Envoi vers Supabase...", supabaseId ? `(Mise à jour ID: ${supabaseId})` : "(Nouvelle insertion)");
+        console.log("📤 Envoi vers Supabase...", supabaseId ? `(UPDATE ID: ${supabaseId})` : "(INSERT nouveau)");
 
         let eq, eqErr;
 
-        // 1. Sauvegarder l'équipement
-        if (supabaseId) {
-          // Vérifier que l'ID existe vraiment dans Supabase
-          console.log("🔍 Vérification de l'existence de l'ID Supabase...");
-          const { data: existingCheck } = await supabaseClient
-            .from("equipements")
-            .select('id')
-            .eq('id', supabaseId)
-            .limit(1);
+        // ═════════════════════════════════════════════════════════════
+        // LOGIQUE INSERT / UPDATE
+        // ═════════════════════════════════════════════════════════════
 
-          if (existingCheck && existingCheck.length > 0) {
-            // MISE À JOUR d'un équipement existant
-            console.log("🔄 Mise à jour de l'équipement existant");
-            const result = await supabaseClient
-              .from("equipements")
-              .update(equipmentForDb)
-              .eq('id', supabaseId)
-              .select();
-            eq = result.data;
-            eqErr = result.error;
-          } else {
-            // L'ID n'existe pas dans Supabase → INSERT au lieu de UPDATE
-            console.warn("⚠️ ID Supabase inexistant, création d'un nouvel enregistrement");
-            equipment.supabase_id = null; // Réinitialiser pour avoir un nouvel UUID
-            const result = await supabaseClient
+        if (supabaseId) {
+          // CAS 1 : On a un supabase_id → UPDATE
+          console.log("🔄 Tentative de mise à jour");
+          const result = await supabaseClient
+            .from("equipements")
+            .update(equipmentForDb)
+            .eq('id', supabaseId)
+            .select();
+
+          eq = result.data;
+          eqErr = result.error;
+
+          // Si l'UPDATE échoue ou ne retourne rien, l'ID est fantôme
+          if (!eqErr && (!eq || eq.length === 0)) {
+            console.warn("⚠️ UPDATE a échoué, l'ID n'existe pas dans Supabase");
+            console.log("➕ Basculement en mode INSERT");
+
+            // Réessayer avec INSERT
+            const insertResult = await supabaseClient
               .from("equipements")
               .insert(equipmentForDb)
               .select();
-            eq = result.data;
-            eqErr = result.error;
+
+            eq = insertResult.data;
+            eqErr = insertResult.error;
           }
         } else {
-          // Vérifier si un équipement similaire existe déjà (basé sur lot, code et timestamp similaire)
-          // pour éviter les doublons en cas de double-clic sur le bouton sync
-          console.log("🔍 Vérification des doublons...");
-          const { data: existingEq } = await supabaseClient
+          // CAS 2 : Pas de supabase_id → INSERT
+          console.log("➕ Insertion d'un nouvel équipement");
+          const result = await supabaseClient
             .from("equipements")
-            .select('id')
-            .eq('lot', equipment.lot)
-            .eq('code', equipment.code)
-            .eq('timestamp', equipment.timestamp)
-            .limit(1);
+            .insert(equipmentForDb)
+            .select();
 
-          if (existingEq && existingEq.length > 0) {
-            console.log("⚠️ Équipement déjà existant dans Supabase, mise à jour au lieu d'insertion");
-            // L'équipement existe déjà, on fait une mise à jour
-            equipment.supabase_id = existingEq[0].id;
-            const result = await supabaseClient
-              .from("equipements")
-              .update(equipmentForDb)
-              .eq('id', existingEq[0].id)
-              .select();
-            eq = result.data;
-            eqErr = result.error;
-          } else {
-            // INSERTION d'un nouvel équipement (Supabase génère l'UUID)
-            console.log("➕ Insertion d'un nouvel équipement");
-            const result = await supabaseClient
-              .from("equipements")
-              .insert(equipmentForDb)
-              .select();
-            eq = result.data;
-            eqErr = result.error;
-          }
+          eq = result.data;
+          eqErr = result.error;
         }
 
+        // ═════════════════════════════════════════════════════════════
+        // GESTION DES ERREURS
+        // ═════════════════════════════════════════════════════════════
+
         if (eqErr) {
-          console.error("❌ Supabase insert/update error:", eqErr);
-          console.error("❌ Détails de l'erreur:", JSON.stringify(eqErr, null, 2));
+          console.error("❌ Erreur Supabase:", eqErr);
+          console.error("❌ Détails:", JSON.stringify(eqErr, null, 2));
           return false;
         }
 
@@ -4373,17 +4427,25 @@
         }
 
         const eqId = eq[0].id;
-        console.log("✅ Équipement sauvegardé, ID Supabase:", eqId);
+        console.log("✅ Équipement sauvegardé, UUID Supabase:", eqId);
 
-        // 🆕 STOCKER L'ID SUPABASE dans l'objet local pour les prochaines synchro
+        // ═════════════════════════════════════════════════════════════
+        // MISE À JOUR DE L'OBJET LOCAL
+        // ═════════════════════════════════════════════════════════════
+
         equipment.supabase_id = eqId;
 
-        // 2. Sauvegarder les photos
+        // ═════════════════════════════════════════════════════════════
+        // UPLOAD DES PHOTOS
+        // ═════════════════════════════════════════════════════════════
+
         if (equipment.photos && equipment.photos.length > 0) {
           console.log(`📸 Upload de ${equipment.photos.length} photo(s)...`);
+
           for (let i = 0; i < equipment.photos.length; i++) {
             const photo = equipment.photos[i];
-            // Si c'est déjà une URL (déjà sync), on ignore
+
+            // Ignorer les photos déjà uploadées (URL au lieu de base64)
             if (photo.data && photo.data.startsWith('http')) {
               console.log(`⏭️ Photo ${i+1} déjà synchronisée`);
               continue;
@@ -4399,10 +4461,12 @@
 
               if (url) {
                 // Enregistrer l'URL dans la table photos
-                const { error: photoErr } = await supabaseClient.from("photos").insert({
-                  equipement_id: eqId,
-                  url: url
-                });
+                const { error: photoErr } = await supabaseClient
+                  .from("photos")
+                  .insert({
+                    equipement_id: eqId,
+                    url: url
+                  });
 
                 if (photoErr) {
                   console.error(`❌ Erreur insertion photo ${i+1}:`, photoErr);
@@ -4416,7 +4480,10 @@
           }
         }
 
-        // 3. Sauvegarder l'état local avec le supabase_id
+        // ═════════════════════════════════════════════════════════════
+        // SAUVEGARDE LOCALE
+        // ═════════════════════════════════════════════════════════════
+
         try {
           localStorage.setItem('pecTechData', JSON.stringify(AppState.equipmentData));
           console.log("💾 État local sauvegardé avec supabase_id");
@@ -4426,8 +4493,9 @@
 
         console.log("✅ Synchronisation équipement terminée:", equipment.id);
         return true;
+
       } catch (err) {
-        console.error("❌ Save error:", err);
+        console.error("❌ Exception durant la synchronisation:", err);
         console.error("❌ Stack:", err.stack);
         return false;
       }
