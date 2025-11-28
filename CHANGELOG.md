@@ -6,6 +6,29 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 
 ---
 
+## [1.0.1] - 2025-01-28
+
+### 🐛 Corrigé
+- **Fix critique : Doublons lors de la 2ème synchronisation**
+  - Le `supabase_id` n'était pas persisté dans `AppState.equipmentData`
+  - Mise à jour explicite dans AppState après chaque synchro
+  - Sauvegarde immédiate dans localStorage
+
+- **Fix : Suppression d'équipements dans Supabase**
+  - Ajout des politiques RLS manquantes (UPDATE, DELETE)
+  - Suppression fonctionnelle des équipements et photos
+
+- **Fix : UPDATE qui échouait systématiquement**
+  - Politique UPDATE manquante dans Supabase
+  - Tous les équipements étaient réinsérés au lieu d'être mis à jour
+
+### 🔧 Amélioré
+- Logs plus détaillés pour distinguer INSERT vs UPDATE
+- Affichage de l'UUID lors des opérations
+- Message de confirmation de mise à jour dans AppState
+
+---
+
 ## [1.0.0] - 2025-01-28
 
 ### ✨ Ajouté
