@@ -1038,75 +1038,30 @@
       <div class="content">
         <div class="form-container">
           <form id="equipForm">
-            <!-- Section 1: Localisation (Toujours visible) -->
+            <!-- Section 1: Sélection Projet & Localisation -->
             <div class="form-section">
-              <h3>📍 Projet & Localisation</h3>
+              <h3>🏢 Projet & Localisation</h3>
 
               <div class="form-group">
-                <label>Projet :</label>
-                <input type="text" id="formProjet" value="PEC La Défense - 21 000 m²" readonly>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Date visite :</label>
-                  <input type="date" id="formDate">
-                </div>
-                <div class="form-group">
-                  <label>Technicien :</label>
-                  <input type="text" id="formTechnicien" placeholder="Nom du technicien">
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Heure début :</label>
-                  <input type="time" id="formHeureDebut">
-                </div>
-                <div class="form-group">
-                  <label>Heure fin :</label>
-                  <input type="time" id="formHeureFin">
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Entreprise :</label>
-                  <input type="text" id="formEntreprise" placeholder="Nom de l'entreprise">
-                </div>
-                <div class="form-group">
-                  <label>Contact sur site :</label>
-                  <input type="text" id="formContactSite" placeholder="Référent sur site">
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Téléphone référent :</label>
-                  <input type="tel" id="formTelReferent" placeholder="Ex: 06 12 34 56 78">
-                </div>
-                <div class="form-group">
-                  <label>Conditions météo :</label>
-                  <select id="formMeteo">
-                    <option value="">Sélectionner...</option>
-                    <option value="sec">☀️ Sec</option>
-                    <option value="pluie">🌧️ Pluie</option>
-                    <option value="neige">❄️ Neige</option>
-                    <option value="vent">💨 Vent fort</option>
-                    <option value="autre">⛅ Autre</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label>Type de visite :</label>
-                <select id="formTypeVisite">
-                  <option value="">Sélectionner...</option>
-                  <option value="initiale">🔍 Initiale PEC</option>
-                  <option value="complementaire">➕ Complémentaire</option>
-                  <option value="specifique">🎯 Relevés spécifiques</option>
+                <label>Sélectionner une localisation * :</label>
+                <select id="formLocalisationId" required>
+                  <option value="">-- Choisir un projet --</option>
                 </select>
+                <button type="button" class="btn-secondary" id="btnQuickAddLocalisation" style="margin-top: 10px;">
+                  ➕ Créer une nouvelle localisation
+                </button>
               </div>
+
+              <!-- Affichage des infos de la localisation sélectionnée -->
+              <div id="localisationInfoDisplay" style="display: none; margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #2c5aa0;">
+                <h4 style="margin: 0 0 10px 0; color: #2c5aa0;">📋 Informations du projet</h4>
+                <div id="localisationInfoContent" style="font-size: 13px; color: #666; line-height: 1.8;"></div>
+              </div>
+            </div>
+
+            <!-- Section 2: Informations spécifiques à l'équipement -->
+            <div class="form-section">
+              <h3>📦 Informations Lot & Équipement</h3>
 
               <div class="form-group">
                 <label>Lot technique :</label>
@@ -1124,7 +1079,18 @@
                 </div>
               </div>
 
-              <button type="button" class="btn btn-secondary" id="btnGPS">📍 Capturer GPS</button>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Heure début relevé :</label>
+                  <input type="time" id="formHeureDebut">
+                </div>
+                <div class="form-group">
+                  <label>Heure fin relevé :</label>
+                  <input type="time" id="formHeureFin">
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-secondary" id="btnGPS">📍 Capturer GPS équipement</button>
               <div id="gpsInfo" style="margin-top: 10px; font-size: 14px; color: #6c757d"></div>
             </div>
 
@@ -3131,6 +3097,8 @@
         return;
       }
 
+      let createdLocalisation = null;
+
       if (AppState.currentLocalisation) {
         // Mise à jour
         if (updateLocalisation(AppState.currentLocalisation, data)) {
@@ -3141,13 +3109,30 @@
         }
       } else {
         // Création
-        createLocalisation(data);
+        createdLocalisation = createLocalisation(data);
         showToast('✅ Localisation créée', 'success');
       }
 
-      showScreen('localisationsScreen');
-      renderLocalisationsList();
-      renderDashboard(); // Mettre à jour le dashboard
+      // Si on vient du formulaire équipement, retourner au formulaire avec la localisation sélectionnée
+      if (AppState.tempEquipmentFormData) {
+        AppState.currentLot = AppState.tempEquipmentFormData.lot;
+        AppState.editingEquipmentId = AppState.tempEquipmentFormData.editingId;
+        delete AppState.tempEquipmentFormData;
+
+        showScreen('equipmentForm');
+        resetForm();
+
+        // Sélectionner automatiquement la localisation créée
+        if (createdLocalisation) {
+          document.getElementById('formLocalisationId').value = createdLocalisation.local_id;
+          displaySelectedLocalisation();
+        }
+      } else {
+        // Sinon, retour à la liste des localisations
+        showScreen('localisationsScreen');
+        renderLocalisationsList();
+        renderDashboard(); // Mettre à jour le dashboard
+      }
     }
 
     /**
@@ -3173,6 +3158,82 @@
           showToast('❌ Erreur de géolocalisation', 'error');
         }
       );
+    }
+
+    /**
+     * Peuple le sélecteur de localisations dans le formulaire d'équipement
+     */
+    function populateLocalisationSelect() {
+      const select = document.getElementById('formLocalisationId');
+      if (!select) return;
+
+      // Vider le select
+      select.innerHTML = '<option value="">-- Choisir un projet --</option>';
+
+      if (AppState.localisations.length === 0) {
+        select.innerHTML += '<option value="" disabled>⚠️ Aucune localisation créée</option>';
+        return;
+      }
+
+      // Ajouter les localisations
+      AppState.localisations.forEach(loc => {
+        const data = loc.data;
+        const label = `${data.project_name || 'Sans nom'}${data.project_surface ? ' (' + data.project_surface + ' m²)' : ''}`;
+        select.innerHTML += `<option value="${loc.local_id}">${label}</option>`;
+      });
+    }
+
+    /**
+     * Affiche les informations de la localisation sélectionnée
+     */
+    function displaySelectedLocalisation() {
+      const select = document.getElementById('formLocalisationId');
+      const display = document.getElementById('localisationInfoDisplay');
+      const content = document.getElementById('localisationInfoContent');
+
+      if (!select || !display || !content) return;
+
+      const locId = select.value;
+
+      if (!locId) {
+        display.style.display = 'none';
+        return;
+      }
+
+      const localisation = getLocalisationByLocalId(locId);
+      if (!localisation) {
+        display.style.display = 'none';
+        return;
+      }
+
+      const data = localisation.data;
+      const weatherLabels = {
+        'sec': '☀️ Sec',
+        'pluie': '🌧️ Pluie',
+        'neige': '❄️ Neige',
+        'vent': '💨 Vent fort',
+        'autre': '⛅ Autre'
+      };
+      const typeVisiteLabels = {
+        'initiale': '🔍 Initiale PEC',
+        'complementaire': '➕ Complémentaire',
+        'specifique': '🎯 Relevés spécifiques'
+      };
+
+      let html = `
+        <div><strong>Projet:</strong> ${data.project_name || '-'}</div>
+        ${data.project_surface ? `<div><strong>Surface:</strong> ${data.project_surface} m²</div>` : ''}
+        ${data.project_address ? `<div><strong>Adresse:</strong> ${data.project_address}</div>` : ''}
+        ${data.company_name ? `<div><strong>Entreprise:</strong> ${data.company_name}</div>` : ''}
+        ${data.site_contact_name ? `<div><strong>Contact:</strong> ${data.site_contact_name}${data.site_contact_phone ? ' (' + data.site_contact_phone + ')' : ''}</div>` : ''}
+        ${data.visit_date ? `<div><strong>Date de visite:</strong> ${data.visit_date}</div>` : ''}
+        ${data.technician_name ? `<div><strong>Technicien:</strong> ${data.technician_name}</div>` : ''}
+        ${data.weather_conditions ? `<div><strong>Météo:</strong> ${weatherLabels[data.weather_conditions] || data.weather_conditions}</div>` : ''}
+        ${data.type_visite ? `<div><strong>Type de visite:</strong> ${typeVisiteLabels[data.type_visite] || data.type_visite}</div>` : ''}
+      `;
+
+      content.innerHTML = html;
+      display.style.display = 'block';
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -3248,6 +3309,20 @@
       document.getElementById('fabAddEquipment')?.addEventListener('click', () => {
         resetForm();
         showScreen('equipmentForm');
+      });
+
+      // 🆕 Sélecteur de localisation dans formulaire équipement
+      document.getElementById('formLocalisationId')?.addEventListener('change', displaySelectedLocalisation);
+
+      // 🆕 Bouton "Créer nouvelle localisation" rapide depuis formulaire équipement
+      document.getElementById('btnQuickAddLocalisation')?.addEventListener('click', () => {
+        // Sauvegarder temporairement l'état du formulaire équipement
+        AppState.tempEquipmentFormData = {
+          lot: AppState.currentLot,
+          editingId: AppState.editingEquipmentId
+        };
+        // Aller à la page de création de localisation
+        openLocalisationForm();
       });
 
       // Marquer lot terminé
@@ -3339,7 +3414,9 @@
       document.getElementById('formCode').value = generateCode();
 
       initCanvas();
-      document.getElementById('formDate').valueAsDate = new Date();
+
+      // 🆕 Peupler le sélecteur de localisations
+      populateLocalisationSelect();
 
       applyAdaptiveFormDisplay(AppState.currentLot);
       populateTypeSelect();
@@ -3749,17 +3826,20 @@
       // CRÉATION DE L'OBJET DATA (CHAMPS MÉTIER)
       // ═══════════════════════════════════════════════════════════════════════
 
+      // 🆕 Vérifier qu'une localisation est sélectionnée
+      const localisationId = document.getElementById('formLocalisationId')?.value;
+      if (!localisationId) {
+        showToast('⚠️ Veuillez sélectionner une localisation (projet)', 'warning');
+        return;
+      }
+
       const equipmentData = {
+        // 🆕 Référence vers la localisation
+        localisation_id: localisationId,
+
         lot: AppState.currentLot,
-        date: document.getElementById('formDate').value,
         heureDebut: document.getElementById('formHeureDebut').value,
         heureFin: document.getElementById('formHeureFin').value,
-        technicien: document.getElementById('formTechnicien').value,
-        entreprise: document.getElementById('formEntreprise').value,
-        contactSite: document.getElementById('formContactSite').value,
-        telReferent: document.getElementById('formTelReferent').value,
-        meteo: document.getElementById('formMeteo').value,
-        typeVisite: document.getElementById('formTypeVisite').value,
         niveau: document.getElementById('formNiveau').value,
         local: document.getElementById('formLocal').value,
         type: document.getElementById('formType').value === 'Autre' ? document.getElementById('formTypeAutre').value : document.getElementById('formType').value,
@@ -4181,17 +4261,17 @@
       applyAdaptiveFormDisplay(AppState.currentLot);
       populateTypeSelect();
 
-      // Remplir tous les champs standard
+      // 🆕 Peupler le sélecteur de localisations et sélectionner la bonne
+      populateLocalisationSelect();
+      if (eq.localisation_id) {
+        document.getElementById('formLocalisationId').value = eq.localisation_id;
+        displaySelectedLocalisation();
+      }
+
+      // Remplir les champs spécifiques à l'équipement
       document.getElementById('formLot').value = eq.lot || '';
-      document.getElementById('formDate').value = eq.date || '';
       document.getElementById('formHeureDebut').value = eq.heureDebut || '';
       document.getElementById('formHeureFin').value = eq.heureFin || '';
-      document.getElementById('formTechnicien').value = eq.technicien || '';
-      document.getElementById('formEntreprise').value = eq.entreprise || '';
-      document.getElementById('formContactSite').value = eq.contactSite || '';
-      document.getElementById('formTelReferent').value = eq.telReferent || '';
-      document.getElementById('formMeteo').value = eq.meteo || '';
-      document.getElementById('formTypeVisite').value = eq.typeVisite || '';
       document.getElementById('formNiveau').value = eq.niveau || '';
       document.getElementById('formLocal').value = eq.local || '';
 
