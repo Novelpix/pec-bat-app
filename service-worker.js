@@ -1,3 +1,18 @@
+// 🔥 FORCE SW UPDATE — Patch anti-cache
+self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Remplace immédiatement l’ancien SW
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim()); // Prend le contrôle sans reload
+  // Supprime tout le cache précédent
+  caches.keys().then((keys) => {
+    return Promise.all(keys.map((key) => caches.delete(key)));
+  });
+});
+
+
+
 const CACHE_NAME = 'pec-tech-v1';
 const ASSETS_TO_CACHE = [
     './',
