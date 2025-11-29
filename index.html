@@ -847,6 +847,7 @@
         </div>
 
         <div style="text-align: center; margin: 30px 0">
+          <button class="btn btn-primary" id="btnLocalisations" style="margin: 5px; background-color: #2c5aa0;">🏢 Localisations</button>
           <button class="btn btn-primary" id="btnSyncDashboard" onclick="syncAllData()"
             style="margin: 5px; background-color: #28a745;">🔄 Synchroniser</button>
           <button class="btn btn-secondary" id="btnExports" style="margin: 5px;">📊 Import-Export</button>
@@ -861,7 +862,145 @@
       </div>
     </div>
 
-    <!-- ÉCRAN 2: LISTE ÉQUIPEMENTS -->
+    <!-- ÉCRAN 2: GESTION LOCALISATIONS -->
+    <div id="localisationsScreen" class="screen">
+      <div class="header" style="position: relative">
+        <button class="nav-button" id="btnRetourDashboardFromLoc">← Accueil</button>
+        <h1>🏢 Gestion des Localisations</h1>
+      </div>
+
+      <div class="content">
+        <div class="breadcrumb">
+          <a id="breadcrumbHomeFromLoc">Accueil</a> &gt;
+          <span>Localisations</span>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0">
+          <button class="btn btn-success" id="btnAddLocalisation">➕ Nouvelle localisation</button>
+        </div>
+
+        <div style="max-width: 1200px; margin: 0 auto;">
+          <h3 style="color: #333; margin: 30px 0 20px 0">📍 Projets & Localisations :</h3>
+          <div id="localisationsList" class="equipment-list"></div>
+
+          <div id="emptyLocalisationsMessage" style="text-align: center; padding: 60px 20px; color: #999; display: none;">
+            <p style="font-size: 18px; margin-bottom: 20px;">📍 Aucune localisation créée</p>
+            <p style="font-size: 14px;">Créez votre première localisation pour commencer à ajouter des équipements.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÉCRAN 3: FORMULAIRE LOCALISATION -->
+    <div id="localisationForm" class="screen">
+      <div class="header" style="position: relative">
+        <button class="nav-button" id="btnRetourLocalisations">← Retour</button>
+        <h1 id="localisationFormTitle">🏢 Nouvelle localisation</h1>
+      </div>
+
+      <div class="content">
+        <div class="form-container">
+          <form id="locForm">
+            <div class="form-section">
+              <h3>📋 Informations du Projet</h3>
+
+              <div class="form-group">
+                <label>Nom du projet * :</label>
+                <input type="text" id="formProjectName" placeholder="Ex: Rénovation Hôtel de Ville" required>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Surface (m²) :</label>
+                  <input type="text" id="formProjectSurface" placeholder="Ex: 21 000">
+                </div>
+                <div class="form-group">
+                  <label>Adresse du chantier :</label>
+                  <input type="text" id="formProjectAddress" placeholder="Ex: 12 rue de la Mairie, 92000 Nanterre">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>GPS du projet :</label>
+                <input type="text" id="formProjectGPS" placeholder="Latitude, Longitude" readonly>
+                <button type="button" class="btn-secondary" id="btnCaptureProjectGPS" style="margin-top: 10px;">
+                  📍 Capturer la position GPS
+                </button>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>🏢 Contact & Entreprise</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Entreprise :</label>
+                  <input type="text" id="formCompanyName" placeholder="Nom de l'entreprise">
+                </div>
+                <div class="form-group">
+                  <label>Contact sur site :</label>
+                  <input type="text" id="formSiteContactName" placeholder="Nom du référent">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Téléphone référent :</label>
+                <input type="tel" id="formSiteContactPhone" placeholder="Ex: 06 12 34 56 78">
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>📅 Informations de Visite</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Technicien :</label>
+                  <input type="text" id="formTechnicianName" placeholder="Nom du technicien">
+                </div>
+                <div class="form-group">
+                  <label>Date de visite :</label>
+                  <input type="date" id="formVisitDate">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Conditions météo :</label>
+                  <select id="formWeatherConditions">
+                    <option value="">Sélectionner...</option>
+                    <option value="sec">☀️ Sec</option>
+                    <option value="pluie">🌧️ Pluie</option>
+                    <option value="neige">❄️ Neige</option>
+                    <option value="vent">💨 Vent fort</option>
+                    <option value="autre">⛅ Autre</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Type de visite :</label>
+                  <select id="formTypeVisite">
+                    <option value="">Sélectionner...</option>
+                    <option value="initiale">🔍 Initiale PEC</option>
+                    <option value="complementaire">➕ Complémentaire</option>
+                    <option value="specifique">🎯 Relevés spécifiques</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+              <button type="submit" class="btn btn-success" style="font-size: 18px; padding: 15px 40px;">
+                ✅ Enregistrer la localisation
+              </button>
+              <button type="button" class="btn btn-secondary" id="btnCancelLocalisation" style="margin-left: 15px; padding: 15px 40px;">
+                ❌ Annuler
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÉCRAN 4: LISTE ÉQUIPEMENTS -->
     <div id="equipmentList" class="screen">
       <div class="header" style="position: relative">
         <button class="nav-button" id="btnRetourLots">← Accueil</button>
@@ -2397,6 +2536,10 @@
       currentPhotos: [],
       currentCroquis: null,
 
+      // 🆕 LOCALISATIONS (Projets & Localisations)
+      localisations: [],
+      currentLocalisation: null,
+
       formatRestitution: 'csv',
       cloudUrl: '',
       gmaoLogiciel: '',
@@ -2830,6 +2973,213 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 GESTION LOCALISATIONS - INTERFACE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Affiche la liste des localisations
+     */
+    function renderLocalisationsList() {
+      const container = document.getElementById('localisationsList');
+      const emptyMessage = document.getElementById('emptyLocalisationsMessage');
+
+      if (!container) return;
+
+      if (AppState.localisations.length === 0) {
+        container.innerHTML = '';
+        emptyMessage.style.display = 'block';
+        return;
+      }
+
+      emptyMessage.style.display = 'none';
+
+      const html = AppState.localisations.map(loc => {
+        const data = loc.data;
+        const syncIcon = loc.synced ? '🟢' : '🟡';
+        const syncLabel = loc.synced ? 'Synchronisé' : 'En attente de sync';
+
+        // Compter les équipements liés à cette localisation
+        let equipmentCount = 0;
+        for (const lot of LOTS_TECHNIQUES) {
+          const equipments = AppState.equipmentData[lot] || [];
+          equipmentCount += equipments.filter(eq => eq.data?.localisation_id === loc.local_id).length;
+        }
+
+        return `
+          <div class="equipment-card" data-localisation-id="${loc.local_id}">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div style="flex: 1;">
+                <h3 style="margin: 0 0 10px 0; color: #2c5aa0;">
+                  🏢 ${data.project_name || 'Sans nom'}
+                </h3>
+                <div style="font-size: 13px; color: #666; line-height: 1.6;">
+                  ${data.project_surface ? `<div>📐 Surface: ${data.project_surface} m²</div>` : ''}
+                  ${data.project_address ? `<div>📍 ${data.project_address}</div>` : ''}
+                  ${data.company_name ? `<div>🏢 ${data.company_name}</div>` : ''}
+                  ${data.site_contact_name ? `<div>👤 ${data.site_contact_name}</div>` : ''}
+                  ${data.visit_date ? `<div>📅 ${data.visit_date}</div>` : ''}
+                  ${data.technician_name ? `<div>👷 ${data.technician_name}</div>` : ''}
+                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+                    <strong>📦 ${equipmentCount} équipement(s)</strong> associé(s)
+                  </div>
+                </div>
+              </div>
+              <div style="text-align: right; white-space: nowrap;">
+                <div style="font-size: 11px; color: #999; margin-bottom: 10px;">
+                  ${syncIcon} ${syncLabel}
+                </div>
+                <button class="btn-icon btn-edit-localisation" data-id="${loc.local_id}" title="Modifier">
+                  ✏️
+                </button>
+                <button class="btn-icon btn-delete-localisation" data-id="${loc.local_id}" title="Supprimer">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+
+      // Attacher les event listeners
+      container.querySelectorAll('.btn-edit-localisation').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const locId = btn.dataset.id;
+          openLocalisationForm(locId);
+        });
+      });
+
+      container.querySelectorAll('.btn-delete-localisation').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const locId = btn.dataset.id;
+          if (deleteLocalisation(locId)) {
+            renderLocalisationsList();
+            renderDashboard(); // Mettre à jour le dashboard
+          }
+        });
+      });
+    }
+
+    /**
+     * Ouvre le formulaire de localisation (création ou édition)
+     * @param {string|null} locId - ID de la localisation à éditer (null = création)
+     */
+    function openLocalisationForm(locId = null) {
+      const form = document.getElementById('locForm');
+      const title = document.getElementById('localisationFormTitle');
+
+      if (locId) {
+        // Mode édition
+        const localisation = getLocalisationByLocalId(locId);
+        if (!localisation) {
+          showToast('❌ Localisation introuvable', 'error');
+          return;
+        }
+
+        title.textContent = '✏️ Modifier la localisation';
+        AppState.currentLocalisation = locId;
+
+        const data = localisation.data;
+        document.getElementById('formProjectName').value = data.project_name || '';
+        document.getElementById('formProjectSurface').value = data.project_surface || '';
+        document.getElementById('formProjectAddress').value = data.project_address || '';
+        document.getElementById('formProjectGPS').value = data.project_gps || '';
+        document.getElementById('formCompanyName').value = data.company_name || '';
+        document.getElementById('formSiteContactName').value = data.site_contact_name || '';
+        document.getElementById('formSiteContactPhone').value = data.site_contact_phone || '';
+        document.getElementById('formTechnicianName').value = data.technician_name || '';
+        document.getElementById('formVisitDate').value = data.visit_date || '';
+        document.getElementById('formWeatherConditions').value = data.weather_conditions || '';
+        document.getElementById('formTypeVisite').value = data.type_visite || '';
+      } else {
+        // Mode création
+        title.textContent = '🏢 Nouvelle localisation';
+        AppState.currentLocalisation = null;
+        form.reset();
+        // Pré-remplir la date du jour
+        document.getElementById('formVisitDate').valueAsDate = new Date();
+      }
+
+      showScreen('localisationForm');
+    }
+
+    /**
+     * Sauvegarde une localisation (création ou mise à jour)
+     */
+    function submitLocalisationForm(e) {
+      e.preventDefault();
+
+      const data = {
+        project_name: document.getElementById('formProjectName').value,
+        project_surface: document.getElementById('formProjectSurface').value,
+        project_address: document.getElementById('formProjectAddress').value,
+        project_gps: document.getElementById('formProjectGPS').value,
+        company_name: document.getElementById('formCompanyName').value,
+        site_contact_name: document.getElementById('formSiteContactName').value,
+        site_contact_phone: document.getElementById('formSiteContactPhone').value,
+        technician_name: document.getElementById('formTechnicianName').value,
+        visit_date: document.getElementById('formVisitDate').value,
+        weather_conditions: document.getElementById('formWeatherConditions').value,
+        type_visite: document.getElementById('formTypeVisite').value
+      };
+
+      if (!data.project_name) {
+        showToast('⚠️ Le nom du projet est obligatoire', 'warning');
+        return;
+      }
+
+      if (AppState.currentLocalisation) {
+        // Mise à jour
+        if (updateLocalisation(AppState.currentLocalisation, data)) {
+          showToast('✅ Localisation mise à jour', 'success');
+        } else {
+          showToast('❌ Erreur lors de la mise à jour', 'error');
+          return;
+        }
+      } else {
+        // Création
+        createLocalisation(data);
+        showToast('✅ Localisation créée', 'success');
+      }
+
+      showScreen('localisationsScreen');
+      renderLocalisationsList();
+      renderDashboard(); // Mettre à jour le dashboard
+    }
+
+    /**
+     * Capture les coordonnées GPS du projet
+     */
+    function captureProjectGPS() {
+      if (!navigator.geolocation) {
+        showToast('⚠️ Géolocalisation non disponible', 'warning');
+        return;
+      }
+
+      showToast('📍 Capture GPS en cours...', 'info');
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lng = position.coords.longitude.toFixed(6);
+          document.getElementById('formProjectGPS').value = `${lat}, ${lng}`;
+          showToast('✅ GPS capturé', 'success');
+        },
+        (error) => {
+          console.error('Erreur GPS:', error);
+          showToast('❌ Erreur de géolocalisation', 'error');
+        }
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FIN GESTION LOCALISATIONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════════
     // LISTENERS
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -2846,6 +3196,34 @@
         renderKPIs();
         showScreen('syntheseKpis');
       });
+
+      // 🆕 Navigation Localisations
+      document.getElementById('btnLocalisations')?.addEventListener('click', () => {
+        renderLocalisationsList();
+        showScreen('localisationsScreen');
+      });
+      document.getElementById('btnRetourDashboardFromLoc')?.addEventListener('click', () => {
+        showScreen('dashboard');
+        renderDashboard();
+      });
+      document.getElementById('breadcrumbHomeFromLoc')?.addEventListener('click', () => {
+        showScreen('dashboard');
+        renderDashboard();
+      });
+      document.getElementById('btnAddLocalisation')?.addEventListener('click', () => {
+        openLocalisationForm();
+      });
+      document.getElementById('btnRetourLocalisations')?.addEventListener('click', () => {
+        showScreen('localisationsScreen');
+        renderLocalisationsList();
+      });
+      document.getElementById('btnCancelLocalisation')?.addEventListener('click', () => {
+        showScreen('localisationsScreen');
+        renderLocalisationsList();
+      });
+      document.getElementById('locForm')?.addEventListener('submit', submitLocalisationForm);
+      document.getElementById('btnCaptureProjectGPS')?.addEventListener('click', captureProjectGPS);
+
       document.getElementById('btnRetourLots')?.addEventListener('click', () => {
         showScreen('dashboard');
         renderDashboard();
@@ -4063,7 +4441,12 @@
           console.log('✅ Lots terminés chargés:', AppState.completedLots.length);
         }
 
-
+        // 🆕 Charger les localisations
+        const savedLocalisations = localStorage.getItem('pecTechLocalisations');
+        if (savedLocalisations) {
+          AppState.localisations = JSON.parse(savedLocalisations);
+          console.log('✅ Localisations chargées:', AppState.localisations.length);
+        }
 
         const savedFormatRestitution = localStorage.getItem('pecTechFormatRestitution');
         if (savedFormatRestitution) {
@@ -4081,8 +4464,6 @@
           AppState.gmaoLogiciel = savedGmaoLogiciel;
         }
 
-
-        loadFormatRestitutionPreferences();
       } catch (e) {
         console.error('❌ Erreur chargement données:', e);
       }
@@ -4092,6 +4473,7 @@
       try {
         localStorage.setItem('pecTechData', JSON.stringify(AppState.equipmentData));
         localStorage.setItem('pecTechCompletedLots', JSON.stringify(AppState.completedLots));
+        localStorage.setItem('pecTechLocalisations', JSON.stringify(AppState.localisations));
         console.log('💾 Données sauvegardées');
       } catch (e) {
         console.error('❌ Erreur sauvegarde:', e);
@@ -4108,10 +4490,13 @@
       if (confirm('⚠️ ATTENTION : Cette action va supprimer TOUTES les données. Continuer ?')) {
         AppState.equipmentData = {};
         AppState.completedLots = [];
+        AppState.localisations = [];
+        AppState.currentLocalisation = null;
         AppState.journalVisite = { incidents: '', zonesNonVisitees: '', pointsARevoir: '' };
         AppState.syntheseTerrain = { forces: '', faiblesses: '', priorites: '', recommandations: '' };
         localStorage.removeItem('pecTechData');
         localStorage.removeItem('pecTechCompletedLots');
+        localStorage.removeItem('pecTechLocalisations');
         localStorage.removeItem('pecTechJournal');
         localStorage.removeItem('pecTechSynthese');
         showToast('🗑️ Toutes les données ont été effacées', 'warning');
@@ -4409,6 +4794,126 @@
         }))
       };
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 FONCTIONS CRUD POUR LOCALISATIONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Crée une structure de localisation (Projet & Localisation)
+     * @param {Object} data - Données de la localisation
+     * @param {string} existingLocalId - ID local existant (pour updates)
+     * @param {string} existingSupabaseId - ID Supabase existant (pour sync)
+     * @returns {Object} Structure complète de la localisation
+     */
+    function createLocalisationStructure(data, existingLocalId = null, existingSupabaseId = null) {
+      const now = new Date().toISOString();
+
+      return {
+        local_id: existingLocalId || generateUUID(),
+        supabase_id: existingSupabaseId || null,
+        status: existingSupabaseId ? 'synced' : 'pending',
+        synced: !!existingSupabaseId,
+        created_at: now,
+        last_update: now,
+        data: { ...data }
+      };
+    }
+
+    /**
+     * Trouve une localisation par son local_id
+     * @param {string} localId - ID local de la localisation
+     * @returns {Object|null} Localisation trouvée ou null
+     */
+    function getLocalisationByLocalId(localId) {
+      return AppState.localisations.find(loc => loc.local_id === localId) || null;
+    }
+
+    /**
+     * Crée une nouvelle localisation
+     * @param {Object} data - Données de la localisation
+     * @returns {Object} Localisation créée
+     */
+    function createLocalisation(data) {
+      const localisation = createLocalisationStructure(data);
+      AppState.localisations.push(localisation);
+      saveToLocalStorage();
+      console.log('✅ Localisation créée:', localisation.local_id);
+      return localisation;
+    }
+
+    /**
+     * Met à jour une localisation existante
+     * @param {string} localId - ID local de la localisation
+     * @param {Object} data - Nouvelles données
+     * @returns {boolean} Succès de la mise à jour
+     */
+    function updateLocalisation(localId, data) {
+      const index = AppState.localisations.findIndex(loc => loc.local_id === localId);
+      if (index === -1) {
+        console.error('❌ Localisation introuvable:', localId);
+        return false;
+      }
+
+      const localisation = AppState.localisations[index];
+      localisation.data = { ...data };
+      localisation.last_update = new Date().toISOString();
+      localisation.status = 'pending'; // Marquer pour resync
+      localisation.synced = false;
+
+      saveToLocalStorage();
+      console.log('✅ Localisation mise à jour:', localId);
+      return true;
+    }
+
+    /**
+     * Supprime une localisation et tous ses équipements
+     * @param {string} localId - ID local de la localisation
+     * @returns {boolean} Succès de la suppression
+     */
+    function deleteLocalisation(localId) {
+      const index = AppState.localisations.findIndex(loc => loc.local_id === localId);
+      if (index === -1) {
+        console.error('❌ Localisation introuvable:', localId);
+        return false;
+      }
+
+      // Vérifier si des équipements utilisent cette localisation
+      let equipmentCount = 0;
+      for (const lot of LOTS_TECHNIQUES) {
+        const equipments = AppState.equipmentData[lot] || [];
+        equipmentCount += equipments.filter(eq => eq.data?.localisation_id === localId).length;
+      }
+
+      if (equipmentCount > 0) {
+        const confirmed = confirm(
+          `⚠️ ATTENTION : Cette localisation contient ${equipmentCount} équipement(s).\n` +
+          `Supprimer cette localisation supprimera aussi tous les équipements associés.\n\n` +
+          `Continuer ?`
+        );
+        if (!confirmed) {
+          return false;
+        }
+
+        // Supprimer tous les équipements liés
+        for (const lot of LOTS_TECHNIQUES) {
+          if (!AppState.equipmentData[lot]) continue;
+          AppState.equipmentData[lot] = AppState.equipmentData[lot].filter(
+            eq => eq.data?.localisation_id !== localId
+          );
+        }
+      }
+
+      // Supprimer la localisation
+      AppState.localisations.splice(index, 1);
+      saveToLocalStorage();
+      console.log('✅ Localisation supprimée:', localId);
+      return true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FIN FONCTIONS LOCALISATIONS
+    // ═══════════════════════════════════════════════════════════════════════
 
     /**
      * Trouve un équipement par son local_id
