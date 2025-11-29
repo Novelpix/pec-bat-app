@@ -2117,50 +2117,9 @@
       </div>
 
       <div class="content">
-        <h2 style="text-align: center; color: #2c5aa0; margin-bottom: 30px">Exportation des données</h2>
+        <h2 style="text-align: center; color: #2c5aa0; margin-bottom: 30px">🔄 Synchronisation & Export/Import</h2>
 
-        <!-- NOUVEAU : Format de restitution souhaité -->
-        <div class="form-section" style="max-width: 800px; margin: 0 auto 30px auto;">
-          <h3>📋 Format de Restitution Souhaité</h3>
-          <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
-            Sélectionnez le format d'export principal pour votre rapport de visite
-          </p>
-          <div class="form-group">
-            <label for="formatRestitution">Format préféré :</label>
-            <select id="formatRestitution"
-              style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 5px; font-size: 16px;">
-              <option value="csv">📄 Excel avec photos intégrées (CSV + Photos)</option>
-              <option value="json">💾 JSON complet (Backup réimportable)</option>
-              <option value="pdf">📑 PDF avec hyperliens photos</option>
-              <option value="gmao">🔧 Import GMAO (logiciel de maintenance)</option>
-              <option value="bim">🏗️ Format BIM/IFC (maquette numérique)</option>
-              <option value="cloud">☁️ Plateforme collaborative (URL)</option>
-            </select>
-          </div>
-          <div class="form-group" id="cloudUrlGroup" style="display: none;">
-            <label for="cloudUrl">URL Plateforme Collaborative :</label>
-            <input type="url" id="cloudUrl" placeholder="https://..." style="width: 100%;">
-            <small>Exemple : https://votre-plateforme.com/projet/defense-21000</small>
-          </div>
-          <div class="form-group" id="gmaoLogicielGroup" style="display: none;">
-            <label for="gmaoLogiciel">Nom du logiciel GMAO :</label>
-            <input type="text" id="gmaoLogiciel" placeholder="Ex: CARL Source, Mainpro, Yardi..." style="width: 100%;">
-          </div>
-          <button class="btn btn-success" onclick="saveFormatRestitution()" style="margin-top: 10px;">💾 Enregistrer la
-            préférence</button>
-        </div>
-
-        <div style="text-align: center; margin: 40px 0">
-          <button class="btn btn-success" onclick="exportCSVAndPhotos()">📄 Exporter CSV + 📦 Photos (ZIP)</button>
-          <button class="btn btn-primary" onclick="exportJSON()">💾 Exporter JSON Complet</button>
-        </div>
-
-        <p style="text-align: center; color: #6c757d; font-size: 14px; margin: 20px 0;">
-          ✅ CSV : Ouverture directe dans Excel | ✅ ZIP : Toutes les photos classées par lot | ✅ JSON : Sauvegarde
-          complète réimportable
-        </p>
-
-        <div style="border-top: 2px solid #e9ecef; padding-top: 40px; margin-top: 40px;">
+        <div style="text-align: center; margin: 40px 0;">
           <div class="header-actions">
             <button id="btnSync" class="btn-primary" onclick="syncAllData()" style="background-color: #28a745;">🔄
               Synchroniser</button>
@@ -2171,20 +2130,21 @@
             <button class="btn-danger" onclick="clearAllData()">🗑️ Reset</button>
           </div>
 
-          <p style="text-align: center; color: #6c757d; font-size: 14px; margin: 20px 0;">
-            ⚠️ <strong>Attention :</strong> L'import écrasera les données actuelles. Exportez d'abord si nécessaire.
-          </p>
+          <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+            <h4 style="color: #333; margin-bottom: 15px;">📋 Guide des formats :</h4>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto; color: #6c757d; line-height: 1.8;">
+              <li><strong>📄 CSV + Photos</strong> : Export Excel + ZIP photos (2 fichiers) - Pour travailler dans Excel</li>
+              <li><strong>💾 JSON</strong> : Backup complet réimportable - Pour sauvegarder ou changer d'ordinateur</li>
+              <li><strong>📥 Restaurer</strong> : Importer un backup JSON - ⚠️ Écrase les données actuelles</li>
+              <li><strong>🗑️ Reset</strong> : Effacer toutes les données - ⚠️ Action irréversible</li>
+            </ul>
+          </div>
         </div>
 
         <h3 style="color: #333; margin: 40px 0 20px 0">📈 Statistiques détaillées par lot :</h3>
 
         <div id="statsDetails" style="margin: 30px 0">
           <!-- Rempli par JavaScript -->
-        </div>
-
-        <div style="text-align: center; margin: 40px 0">
-          <button class="btn btn-secondary" onclick="clearAllData()" style="margin-top: 30px">🗑️ Effacer toutes les
-            données</button>
         </div>
       </div>
     </div>
@@ -5231,70 +5191,6 @@
       reader.readAsText(file);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // FORMAT DE RESTITUTION (NOUVEAU)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function loadFormatRestitutionPreferences() {
-      const formatSelect = document.getElementById('formatRestitution');
-      const cloudUrlInput = document.getElementById('cloudUrl');
-      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
-      const cloudGroup = document.getElementById('cloudUrlGroup');
-      const gmaoGroup = document.getElementById('gmaoLogicielGroup');
-
-      if (formatSelect) {
-        formatSelect.value = AppState.formatRestitution || 'csv';
-
-        if (formatSelect.value === 'cloud') {
-          cloudGroup.style.display = 'block';
-          if (cloudUrlInput) cloudUrlInput.value = AppState.cloudUrl || '';
-        } else if (formatSelect.value === 'gmao') {
-          gmaoGroup.style.display = 'block';
-          if (gmaoLogicielInput) gmaoLogicielInput.value = AppState.gmaoLogiciel || '';
-        }
-      }
-    }
-
-    function saveFormatRestitution() {
-      const formatSelect = document.getElementById('formatRestitution');
-      const cloudUrlInput = document.getElementById('cloudUrl');
-      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
-
-      if (!formatSelect) return;
-
-      AppState.formatRestitution = formatSelect.value;
-      AppState.cloudUrl = cloudUrlInput?.value || '';
-      AppState.gmaoLogiciel = gmaoLogicielInput?.value || '';
-
-      localStorage.setItem('pecTechFormatRestitution', AppState.formatRestitution);
-      localStorage.setItem('pecTechCloudUrl', AppState.cloudUrl);
-      localStorage.setItem('pecTechGmaoLogiciel', AppState.gmaoLogiciel);
-
-      const formatLabels = {
-        'csv': '📄 Excel avec photos (CSV)',
-        'json': '💾 JSON complet',
-        'pdf': '📑 PDF avec hyperliens',
-        'gmao': '🔧 Import GMAO',
-        'bim': '🏗️ Format BIM/IFC',
-        'cloud': '☁️ Plateforme collaborative'
-      };
-
-      let message = `✅ Format de restitution enregistré : ${formatLabels[AppState.formatRestitution]}`;
-
-      if (AppState.formatRestitution === 'cloud' && AppState.cloudUrl) {
-        message += `\nURL : ${AppState.cloudUrl}`;
-      } else if (AppState.formatRestitution === 'gmao' && AppState.gmaoLogiciel) {
-        message += `\nLogiciel : ${AppState.gmaoLogiciel}`;
-      }
-
-      showToast('✅ Préférence enregistrée avec succès', 'success');
-
-      console.log('💾 Format restitution sauvegardé:', {
-        format: AppState.formatRestitution,
-        cloudUrl: AppState.cloudUrl,
-        gmaoLogiciel: AppState.gmaoLogiciel
-      });
-    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // SERVICE WORKER (PWA)
@@ -5426,70 +5322,6 @@
       reader.readAsText(file);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // FORMAT DE RESTITUTION (NOUVEAU)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function loadFormatRestitutionPreferences() {
-      const formatSelect = document.getElementById('formatRestitution');
-      const cloudUrlInput = document.getElementById('cloudUrl');
-      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
-      const cloudGroup = document.getElementById('cloudUrlGroup');
-      const gmaoGroup = document.getElementById('gmaoLogicielGroup');
-
-      if (formatSelect) {
-        formatSelect.value = AppState.formatRestitution || 'csv';
-
-        if (formatSelect.value === 'cloud') {
-          cloudGroup.style.display = 'block';
-          if (cloudUrlInput) cloudUrlInput.value = AppState.cloudUrl || '';
-        } else if (formatSelect.value === 'gmao') {
-          gmaoGroup.style.display = 'block';
-          if (gmaoLogicielInput) gmaoLogicielInput.value = AppState.gmaoLogiciel || '';
-        }
-      }
-    }
-
-    function saveFormatRestitution() {
-      const formatSelect = document.getElementById('formatRestitution');
-      const cloudUrlInput = document.getElementById('cloudUrl');
-      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
-
-      if (!formatSelect) return;
-
-      AppState.formatRestitution = formatSelect.value;
-      AppState.cloudUrl = cloudUrlInput?.value || '';
-      AppState.gmaoLogiciel = gmaoLogicielInput?.value || '';
-
-      localStorage.setItem('pecTechFormatRestitution', AppState.formatRestitution);
-      localStorage.setItem('pecTechCloudUrl', AppState.cloudUrl);
-      localStorage.setItem('pecTechGmaoLogiciel', AppState.gmaoLogiciel);
-
-      const formatLabels = {
-        'csv': '📄 Excel avec photos (CSV)',
-        'json': '💾 JSON complet',
-        'pdf': '📑 PDF avec hyperliens',
-        'gmao': '🔧 Import GMAO',
-        'bim': '🏗️ Format BIM/IFC',
-        'cloud': '☁️ Plateforme collaborative'
-      };
-
-      let message = `✅ Format de restitution enregistré : ${formatLabels[AppState.formatRestitution]}`;
-
-      if (AppState.formatRestitution === 'cloud' && AppState.cloudUrl) {
-        message += `\nURL : ${AppState.cloudUrl}`;
-      } else if (AppState.formatRestitution === 'gmao' && AppState.gmaoLogiciel) {
-        message += `\nLogiciel : ${AppState.gmaoLogiciel}`;
-      }
-
-      showToast('✅ Préférence enregistrée avec succès', 'success');
-
-      console.log('💾 Format restitution sauvegardé:', {
-        format: AppState.formatRestitution,
-        cloudUrl: AppState.cloudUrl,
-        gmaoLogiciel: AppState.gmaoLogiciel
-      });
-    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // SERVICE WORKER (PWA)
@@ -5621,70 +5453,6 @@
       reader.readAsText(file);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // FORMAT DE RESTITUTION (NOUVEAU)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function loadFormatRestitutionPreferences() {
-      const formatSelect = document.getElementById('formatRestitution');
-      const cloudUrlInput = document.getElementById('cloudUrl');
-      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
-      const cloudGroup = document.getElementById('cloudUrlGroup');
-      const gmaoGroup = document.getElementById('gmaoLogicielGroup');
-
-      if (formatSelect) {
-        formatSelect.value = AppState.formatRestitution || 'csv';
-
-        if (formatSelect.value === 'cloud') {
-          cloudGroup.style.display = 'block';
-          if (cloudUrlInput) cloudUrlInput.value = AppState.cloudUrl || '';
-        } else if (formatSelect.value === 'gmao') {
-          gmaoGroup.style.display = 'block';
-          if (gmaoLogicielInput) gmaoLogicielInput.value = AppState.gmaoLogiciel || '';
-        }
-      }
-    }
-
-    function saveFormatRestitution() {
-      const formatSelect = document.getElementById('formatRestitution');
-      const cloudUrlInput = document.getElementById('cloudUrl');
-      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
-
-      if (!formatSelect) return;
-
-      AppState.formatRestitution = formatSelect.value;
-      AppState.cloudUrl = cloudUrlInput?.value || '';
-      AppState.gmaoLogiciel = gmaoLogicielInput?.value || '';
-
-      localStorage.setItem('pecTechFormatRestitution', AppState.formatRestitution);
-      localStorage.setItem('pecTechCloudUrl', AppState.cloudUrl);
-      localStorage.setItem('pecTechGmaoLogiciel', AppState.gmaoLogiciel);
-
-      const formatLabels = {
-        'csv': '📄 Excel avec photos (CSV)',
-        'json': '💾 JSON complet',
-        'pdf': '📑 PDF avec hyperliens',
-        'gmao': '🔧 Import GMAO',
-        'bim': '🏗️ Format BIM/IFC',
-        'cloud': '☁️ Plateforme collaborative'
-      };
-
-      let message = `✅ Format de restitution enregistré : ${formatLabels[AppState.formatRestitution]}`;
-
-      if (AppState.formatRestitution === 'cloud' && AppState.cloudUrl) {
-        message += `\nURL : ${AppState.cloudUrl}`;
-      } else if (AppState.formatRestitution === 'gmao' && AppState.gmaoLogiciel) {
-        message += `\nLogiciel : ${AppState.gmaoLogiciel}`;
-      }
-
-      showToast('✅ Préférence enregistrée avec succès', 'success');
-
-      console.log('💾 Format restitution sauvegardé:', {
-        format: AppState.formatRestitution,
-        cloudUrl: AppState.cloudUrl,
-        gmaoLogiciel: AppState.gmaoLogiciel
-      });
-    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // SERVICE WORKER (PWA)
