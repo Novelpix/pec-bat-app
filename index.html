@@ -5285,6 +5285,28 @@
 
         const equipmentForDb = { ...equipment.data };
 
+        // 🆕 CONVERTIR localisation_id (local_id → supabase_id)
+        if (equipmentForDb.localisation_id) {
+          const localisation = AppState.localisations.find(loc => loc.local_id === equipmentForDb.localisation_id);
+          if (!localisation) {
+            console.error("❌ Localisation introuvable pour local_id:", equipmentForDb.localisation_id);
+            equipment.status = 'error';
+            equipment.synced = false;
+            saveToLocalStorage();
+            return false;
+          }
+          if (!localisation.supabase_id) {
+            console.error("❌ La localisation n'a pas encore été synchronisée:", localisation.local_id);
+            equipment.status = 'error';
+            equipment.synced = false;
+            saveToLocalStorage();
+            return false;
+          }
+          // Remplacer le local_id par le supabase_id
+          console.log(`🔄 Conversion localisation_id: ${equipmentForDb.localisation_id} → ${localisation.supabase_id}`);
+          equipmentForDb.localisation_id = localisation.supabase_id;
+        }
+
         // 🔧 Exclure TOUS les champs de gestion locale (ne vont PAS dans Supabase)
         delete equipmentForDb.croquis;      // Stocké localement
         delete equipmentForDb.status;       // État de synchronisation (local seulement)
